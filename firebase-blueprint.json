@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "An employee registered in the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "nominaNumber": { "type": "string" },
+        "schedule": { "type": "string" },
+        "location": { "type": "string" },
+        "fechaIngreso": { "type": "string" },
+        "rfc": { "type": "string" },
+        "userId": { "type": "string", "description": "The ID of the user who created this employee." }
+      },
+      "required": ["id", "name", "nominaNumber", "schedule", "location", "userId"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "A record of an employee's entry or exit.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "name": { "type": "string" },
+        "nominaNumber": { "type": "string" },
+        "type": { "type": "string", "enum": ["ENTRADA", "SALIDA"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        },
+        "locationDescription": { "type": "string" },
+        "delegacion": { "type": "string" },
+        "photo": { "type": "string" },
+        "userId": { "type": "string", "description": "The ID of the user who owns this record." }
+      },
+      "required": ["id", "employeeId", "name", "type", "timestamp", "locationDescription", "userId"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/Employee" },
+      "description": "Employees belonging to a specific user."
+    },
+    "users/{userId}/records/{recordId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Attendance records belonging to a specific user."
+    }
+  }
+}

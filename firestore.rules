@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidEmployee() {
+      return hasRequiredFields(['id', 'name', 'schedule', 'location', 'userId']) &&
+             validStringLength('id', 1, 100) &&
+             validStringLength('name', 1, 150) &&
+             validStringLength('schedule', 1, 100) &&
+             validStringLength('location', 1, 100) &&
+             (!('nominaNumber' in request.resource.data) || validStringLength('nominaNumber', 0, 50));
+    }
+
+    function isValidRecord() {
+      return hasRequiredFields(['id', 'employeeId', 'name', 'type', 'timestamp', 'locationDescription', 'userId']) &&
+             validStringLength('id', 1, 100) &&
+             validStringLength('employeeId', 1, 100) &&
+             validStringLength('name', 1, 150) &&
+             request.resource.data.type in ['ENTRADA', 'SALIDA'] &&
+             isValidDateString(request.resource.data.timestamp) &&
+             validStringLength('locationDescription', 1, 250) &&
+             (!('nominaNumber' in request.resource.data) || validStringLength('nominaNumber', 0, 50)) &&
+             (!('delegacion' in request.resource.data) || validStringLength('delegacion', 0, 100)) &&
+             (!('photo' in request.resource.data) || request.resource.data.photo is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId}/employees/{employeeId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isValidEmployee() && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isValidEmployee() && request.resource.data.userId == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/records/{recordId} {
+      allow read: if isOwner(userId);
+      allow create: if isValidRecord() && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && isValidRecord() && request.resource.data.userId == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/settings/{settingId} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+  }
+}

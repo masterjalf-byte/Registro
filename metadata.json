@@ -1,0 +1,8 @@
+{
+  "name": "Registro de Asistencia Remota",
+  "description": "Aplicación para el registro de asistencia remota con captura de foto y ubicación.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
